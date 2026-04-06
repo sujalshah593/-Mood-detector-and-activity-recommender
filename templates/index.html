@@ -4,74 +4,771 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MoodAI</title>
-    <link
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=Playfair+Display:wght@500&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet"/>
     <link rel="stylesheet" href="/static/style.css" />
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+      :root {
+        --ink: #0d0d0f;
+        --paper: #f5f2ec;
+        --cream: #ede8df;
+        --amber: #e8a84c;
+        --amber-glow: #f5c97a;
+        --teal: #3ecfb2;
+        --teal-dark: #1a9e87;
+        --rose: #e8617a;
+        --lavender: #9b7fe8;
+        --muted: #8a8479;
+        --card-bg: #ffffff;
+        --border: rgba(13,13,15,0.10);
+        --shadow-sm: 0 2px 12px rgba(13,13,15,0.07);
+        --shadow-md: 0 8px 40px rgba(13,13,15,0.12);
+        --shadow-lg: 0 20px 60px rgba(13,13,15,0.18);
+        --radius: 20px;
+        --radius-lg: 32px;
+      }
+
+      html, body {
+        height: 100%;
+        background: var(--paper);
+        font-family: 'Syne', sans-serif;
+        color: var(--ink);
+        overflow: hidden;
+      }
+
+      /* ───── APP SHELL ───── */
+      .app {
+        position: relative;
+        width: 100%;
+        max-width: 430px;
+        height: 100dvh;
+        margin: 0 auto;
+        background: var(--paper);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* noise texture overlay */
+      .app::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        max-width: 430px;
+        margin: auto;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+        pointer-events: none;
+        z-index: 1000;
+        opacity: 0.5;
+      }
+
+      /* ───── SCREENS ───── */
+      .screen {
+        display: none;
+        flex-direction: column;
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding-bottom: 84px;
+        scrollbar-width: none;
+      }
+      .screen::-webkit-scrollbar { display: none; }
+      .screen.active { display: flex; }
+
+      /* ───── HOME SCREEN ───── */
+      .home-header {
+        padding: 56px 28px 24px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .home-header::after {
+        content: '';
+        position: absolute;
+        top: -60px;
+        right: -60px;
+        width: 280px;
+        height: 280px;
+        background: radial-gradient(circle, rgba(232,168,76,0.18) 0%, transparent 70%);
+        pointer-events: none;
+      }
+
+      .greeting {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--amber);
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .greeting::before {
+        content: '';
+        display: inline-block;
+        width: 24px;
+        height: 2px;
+        background: var(--amber);
+        border-radius: 2px;
+      }
+
+      .home-header h1 {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 44px;
+        font-weight: 500;
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+        color: var(--ink);
+      }
+      .home-header h1 span {
+        color: var(--amber);
+        font-style: italic;
+      }
+
+      .home-cards {
+        padding: 8px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .mood-card {
+        background: var(--card-bg);
+        border-radius: var(--radius-lg);
+        padding: 22px 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        cursor: pointer;
+        border: 1.5px solid var(--border);
+        box-shadow: var(--shadow-sm);
+        transition: transform 0.22s cubic-bezier(.34,1.56,.64,1), box-shadow 0.22s ease, border-color 0.22s;
+        position: relative;
+        overflow: hidden;
+      }
+      .mood-card::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, rgba(255,255,255,0.6) 0%, transparent 60%);
+        pointer-events: none;
+      }
+      .mood-card:active {
+        transform: scale(0.97);
+        box-shadow: var(--shadow-sm);
+      }
+      .mood-card:hover {
+        transform: translateY(-3px) scale(1.01);
+        box-shadow: var(--shadow-md);
+        border-color: rgba(13,13,15,0.18);
+      }
+
+      .card-icon-wrap {
+        width: 56px;
+        height: 56px;
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        flex-shrink: 0;
+      }
+      .icon-teal { background: linear-gradient(135deg, #c2f5ed, #7ae8d6); }
+      .icon-purple { background: linear-gradient(135deg, #e0d5f9, #c0aaff); }
+
+      .card-info { flex: 1; }
+      .card-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--ink);
+        margin-bottom: 4px;
+        letter-spacing: -0.01em;
+      }
+      .card-desc {
+        font-size: 12px;
+        color: var(--muted);
+        line-height: 1.5;
+        font-weight: 400;
+      }
+      .card-arrow {
+        font-size: 22px;
+        color: var(--muted);
+        font-weight: 300;
+        flex-shrink: 0;
+        transition: transform 0.2s ease, color 0.2s;
+      }
+      .mood-card:hover .card-arrow { transform: translateX(4px); color: var(--ink); }
+
+      /* Stats strip */
+      .stats-strip {
+        margin: 16px 20px 0;
+        background: var(--ink);
+        border-radius: var(--radius);
+        padding: 18px 22px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: var(--paper);
+      }
+      .stats-icon { font-size: 20px; }
+      .stats-label {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: rgba(245,242,236,0.5);
+        margin-bottom: 2px;
+      }
+      .stats-value {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--amber-glow);
+      }
+
+      /* decorative orbs on home */
+      .orb {
+        position: absolute;
+        border-radius: 50%;
+        pointer-events: none;
+        filter: blur(40px);
+        opacity: 0.5;
+      }
+
+      /* ───── SCREEN HEADER ───── */
+      .screen-header {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 52px 24px 16px;
+        background: var(--paper);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        backdrop-filter: blur(12px);
+      }
+      .back-btn {
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+        background: var(--card-bg);
+        border: 1.5px solid var(--border);
+        font-size: 22px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--ink);
+        box-shadow: var(--shadow-sm);
+        transition: transform 0.15s, box-shadow 0.15s;
+        flex-shrink: 0;
+      }
+      .back-btn:hover { transform: scale(1.06); box-shadow: var(--shadow-md); }
+      .screen-title {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 22px;
+        font-weight: 600;
+        color: var(--ink);
+        letter-spacing: -0.01em;
+      }
+      .screen-sub {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 1px;
+        font-weight: 400;
+      }
+
+      /* ───── FACE SCREEN ───── */
+      .face-content {
+        padding: 16px 20px 0;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .camera-box {
+        position: relative;
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        background: var(--ink);
+        aspect-ratio: 3/4;
+        max-height: 320px;
+        box-shadow: var(--shadow-md);
+      }
+
+      .camera-placeholder {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        color: rgba(245,242,236,0.5);
+        font-size: 13px;
+        background: linear-gradient(160deg, #1a1a1f 0%, #0d0d0f 100%);
+      }
+      .cam-icon { font-size: 40px; opacity: 0.4; }
+
+      #videoFeed {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: none;
+        transform: scaleX(-1);
+      }
+
+      .scan-overlay {
+        position: absolute;
+        inset: 0;
+        display: none;
+      }
+      .scan-corner {
+        position: absolute;
+        width: 28px;
+        height: 28px;
+        border-color: var(--amber);
+        border-style: solid;
+        border-radius: 4px;
+      }
+      .tl { top: 20px; left: 20px; border-width: 3px 0 0 3px; }
+      .tr { top: 20px; right: 20px; border-width: 3px 3px 0 0; }
+      .bl { bottom: 20px; left: 20px; border-width: 0 0 3px 3px; }
+      .br { bottom: 20px; right: 20px; border-width: 0 3px 3px 0; }
+
+      .scan-line {
+        position: absolute;
+        left: 20px;
+        right: 20px;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, var(--amber), transparent);
+        display: none;
+        animation: scanMove 2s ease-in-out infinite;
+        box-shadow: 0 0 12px var(--amber);
+      }
+      @keyframes scanMove {
+        0%   { top: 20px; }
+        50%  { top: calc(100% - 22px); }
+        100% { top: 20px; }
+      }
+
+      /* ───── BUTTONS ───── */
+      .btn {
+        width: 100%;
+        padding: 16px;
+        border-radius: 16px;
+        border: none;
+        font-family: 'Syne', sans-serif;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        letter-spacing: 0.03em;
+        transition: transform 0.18s cubic-bezier(.34,1.56,.64,1), box-shadow 0.18s, opacity 0.18s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+      .btn:active { transform: scale(0.97); }
+      .btn-purple {
+        background: var(--ink);
+        color: var(--paper);
+        box-shadow: 0 6px 24px rgba(13,13,15,0.25);
+      }
+      .btn-purple:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(13,13,15,0.3); }
+      .btn-purple:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+      .btn-outline {
+        background: transparent;
+        color: var(--muted);
+        border: 1.5px solid var(--border);
+      }
+      .btn-outline:hover { background: var(--cream); color: var(--ink); }
+
+      .spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(245,242,236,0.3);
+        border-top-color: var(--paper);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        display: inline-block;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+
+      /* ───── RESULT SCREEN ───── */
+      .result-content {
+        padding: 8px 20px 0;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .result-hero {
+        background: var(--ink);
+        border-radius: var(--radius-lg);
+        padding: 28px 24px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 6px;
+      }
+      .result-hero::before {
+        content: '';
+        position: absolute;
+        top: -40px; right: -40px;
+        width: 160px; height: 160px;
+        background: radial-gradient(circle, rgba(232,168,76,0.2), transparent 70%);
+      }
+      .result-hero::after {
+        content: '';
+        position: absolute;
+        bottom: -40px; left: -40px;
+        width: 160px; height: 160px;
+        background: radial-gradient(circle, rgba(62,207,178,0.12), transparent 70%);
+      }
+
+      #resultBadge {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 28px;
+        font-weight: 600;
+        color: var(--amber-glow);
+        letter-spacing: -0.01em;
+        position: relative;
+        z-index: 1;
+      }
+      #resultSub {
+        font-size: 13px;
+        color: rgba(245,242,236,0.6);
+        margin-top: 6px;
+        font-weight: 400;
+        position: relative;
+        z-index: 1;
+      }
+
+      .section-label {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-top: 14px;
+        margin-bottom: 10px;
+      }
+
+      .emotion-bar { margin-bottom: 10px; }
+      .bar-header {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--ink);
+        margin-bottom: 5px;
+        text-transform: capitalize;
+      }
+      .bar-header span:last-child { color: var(--muted); }
+      .bar-track {
+        height: 6px;
+        background: var(--cream);
+        border-radius: 999px;
+        overflow: hidden;
+      }
+      .bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--amber), var(--amber-glow));
+        border-radius: 999px;
+        transition: width 0.8s cubic-bezier(.22,1,.36,1);
+      }
+
+      .activity-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: var(--card-bg);
+        border-radius: var(--radius);
+        padding: 14px 16px;
+        border: 1.5px solid var(--border);
+        margin-bottom: 10px;
+        box-shadow: var(--shadow-sm);
+      }
+      .act-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #fff9ed, #ffedb3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+      }
+      .act-title { font-size: 13px; font-weight: 600; color: var(--ink); }
+      .act-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+      .msg-box {
+        background: linear-gradient(135deg, #f0faf7, #e6f7f3);
+        border: 1.5px solid rgba(62,207,178,0.25);
+        border-radius: var(--radius);
+        padding: 16px;
+        font-size: 13px;
+        line-height: 1.6;
+        color: var(--ink);
+      }
+      .copy-btn {
+        margin-top: 10px;
+        background: var(--teal);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 10px 18px;
+        font-family: 'Syne', sans-serif;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        letter-spacing: 0.05em;
+        transition: transform 0.15s, box-shadow 0.15s;
+      }
+      .copy-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(62,207,178,0.4); }
+
+      /* ───── TEXT / CHAT SCREEN ───── */
+      .text-content {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        height: 100%;
+        padding: 0;
+      }
+
+      .chat-messages {
+        flex: 1;
+        padding: 12px 20px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        scrollbar-width: none;
+      }
+      .chat-messages::-webkit-scrollbar { display: none; }
+
+      .bubble {
+        max-width: 82%;
+        padding: 13px 16px;
+        border-radius: 20px;
+        font-size: 13px;
+        line-height: 1.6;
+        font-weight: 400;
+        animation: fadeUp 0.3s ease;
+      }
+      @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(8px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+      .bubble.bot {
+        background: var(--card-bg);
+        border: 1.5px solid var(--border);
+        color: var(--ink);
+        align-self: flex-start;
+        border-bottom-left-radius: 6px;
+        box-shadow: var(--shadow-sm);
+      }
+      .bubble.user {
+        background: var(--ink);
+        color: var(--paper);
+        align-self: flex-end;
+        border-bottom-right-radius: 6px;
+        box-shadow: 0 4px 16px rgba(13,13,15,0.2);
+      }
+      .bubble.loading {
+        color: var(--muted);
+        font-style: italic;
+      }
+
+      .activities-bubble {
+        background: var(--card-bg);
+        border: 1.5px solid var(--border);
+        border-radius: 20px;
+        padding: 16px;
+        align-self: flex-start;
+        max-width: 95%;
+        box-shadow: var(--shadow-sm);
+        animation: fadeUp 0.3s ease;
+      }
+
+      .chat-input-area {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 20px;
+        background: var(--paper);
+        border-top: 1.5px solid var(--border);
+        backdrop-filter: blur(12px);
+      }
+
+      #moodInput {
+        flex: 1;
+        background: var(--card-bg);
+        border: 1.5px solid var(--border);
+        border-radius: 16px;
+        padding: 13px 16px;
+        font-family: 'Syne', sans-serif;
+        font-size: 13px;
+        color: var(--ink);
+        outline: none;
+        transition: border-color 0.2s, box-shadow 0.2s;
+      }
+      #moodInput::placeholder { color: var(--muted); }
+      #moodInput:focus {
+        border-color: var(--amber);
+        box-shadow: 0 0 0 3px rgba(232,168,76,0.12);
+      }
+
+      .send-btn {
+        width: 46px;
+        height: 46px;
+        border-radius: 14px;
+        background: var(--ink);
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--paper);
+        flex-shrink: 0;
+        transition: transform 0.18s cubic-bezier(.34,1.56,.64,1), box-shadow 0.18s;
+        box-shadow: 0 4px 14px rgba(13,13,15,0.22);
+      }
+      .send-btn:hover { transform: scale(1.1); box-shadow: 0 6px 20px rgba(13,13,15,0.3); }
+      .send-btn:active { transform: scale(0.96); }
+
+      /* ───── BOTTOM NAV ───── */
+      .nav-bar {
+        position: fixed;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100%;
+        max-width: 430px;
+        background: rgba(245,242,236,0.92);
+        backdrop-filter: blur(20px);
+        border-top: 1.5px solid var(--border);
+        display: flex;
+        padding: 10px 0 calc(10px + env(safe-area-inset-bottom));
+        z-index: 100;
+      }
+
+      .nav-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        cursor: pointer;
+        padding: 6px 0;
+        border-radius: 12px;
+        transition: background 0.2s;
+        color: var(--muted);
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+      .nav-item:hover { background: var(--cream); }
+      .nav-icon { font-size: 20px; transition: transform 0.25s cubic-bezier(.34,1.56,.64,1); }
+      .nav-item.active { color: var(--ink); }
+      .nav-item.active .nav-icon { transform: scale(1.2); }
+
+      /* active nav indicator dot */
+      .nav-item.active span:not(.nav-icon) {
+        position: relative;
+      }
+      .nav-item.active span:not(.nav-icon)::after {
+        content: '';
+        position: absolute;
+        bottom: -4px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 4px;
+        height: 4px;
+        background: var(--amber);
+        border-radius: 50%;
+      }
+
+      /* ───── LAST MOOD BADGE ───── */
+      .last-mood {
+        margin: 16px 20px 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: var(--cream);
+        border-radius: var(--radius);
+        padding: 14px 18px;
+        border: 1.5px solid var(--border);
+        font-size: 12px;
+        color: var(--muted);
+        font-weight: 400;
+      }
+      .last-mood strong { color: var(--ink); font-weight: 600; }
+
+      /* ───── MISC ───── */
+      canvas { display: none; }
+
+      @media (max-width: 400px) {
+        .home-header h1 { font-size: 36px; }
+      }
+    </style>
   </head>
   <body>
     <div class="app">
+
       <!-- HOME -->
       <div id="screen-home" class="screen active">
         <div class="home-header">
           <div class="greeting">Good day</div>
           <h1>How are you<br />feeling <span>today?</span></h1>
         </div>
+
         <div class="home-cards">
           <div
             class="mood-card"
-            onclick="
-              showScreen('screen-face');
-              startCamera();
-            "
+            onclick="showScreen('screen-face'); startCamera();"
           >
             <div class="card-icon-wrap icon-teal">🎭</div>
             <div class="card-info">
               <div class="card-title">Face recognition</div>
-              <div class="card-desc">
-                Scan your face to detect your emotion automatically using AI
-              </div>
+              <div class="card-desc">Scan your face to detect your emotion automatically using AI</div>
             </div>
             <div class="card-arrow">›</div>
           </div>
+
           <div class="mood-card" onclick="showScreen('screen-text')">
             <div class="card-icon-wrap icon-purple">💬</div>
             <div class="card-info">
               <div class="card-title">Text mood detector</div>
-              <div class="card-desc">
-                Describe how you feel and get personalised activity suggestions
-              </div>
+              <div class="card-desc">Describe how you feel and get personalised activity suggestions</div>
             </div>
             <div class="card-arrow">›</div>
           </div>
         </div>
-        <div class="last-mood">
-          <span>🕐</span>
-          <span
-            >Last detected:
-            <strong id="lastMoodLabel">No scan yet</strong></span
-          >
+
+        <div class="stats-strip">
+          <div class="stats-icon">🕐</div>
+          <div>
+            <div class="stats-label">Last detected</div>
+            <div class="stats-value" id="lastMoodLabel">No scan yet</div>
+          </div>
         </div>
       </div>
 
       <!-- FACE SCREEN -->
       <div id="screen-face" class="screen">
         <div class="screen-header">
-          <button
-            class="back-btn"
-            onclick="
-              goBack('screen-home');
-              stopCamera();
-            "
-          >
-            ‹
-          </button>
+          <button class="back-btn" onclick="goBack('screen-home'); stopCamera();">‹</button>
           <div>
             <div class="screen-title">Face scan</div>
             <div class="screen-sub">Position your face in the frame</div>
           </div>
         </div>
+
         <div class="face-content">
           <div class="camera-box">
             <div class="camera-placeholder" id="camPlaceholder">
@@ -86,22 +783,13 @@
               <div class="scan-corner br"></div>
               <div class="scan-line" id="scanLine"></div>
             </div>
-            <canvas id="captureCanvas" style="display: none"></canvas>
+            <canvas id="captureCanvas" style="display:none"></canvas>
           </div>
-          <button
-            class="btn btn-purple"
-            id="scanBtn"
-            onclick="captureAndAnalyze()"
-          >
+
+          <button class="btn btn-purple" id="scanBtn" onclick="captureAndAnalyze()">
             Scan my face
           </button>
-          <button
-            class="btn btn-outline"
-            onclick="
-              goBack('screen-home');
-              stopCamera();
-            "
-          >
+          <button class="btn btn-outline" onclick="goBack('screen-home'); stopCamera();">
             Cancel
           </button>
         </div>
@@ -116,19 +804,22 @@
             <div class="screen-sub">Detected from face scan</div>
           </div>
         </div>
+
         <div class="result-content">
-          <div class="result-badge" id="resultBadge">😊 Happy · 87%</div>
-          <div class="result-sub" id="resultSub">
-            You seem to be in a great mood!
+          <div class="result-hero">
+            <div id="resultBadge">😊 Happy · 87%</div>
+            <div id="resultSub">You seem to be in a great mood!</div>
           </div>
+
           <div class="section-label">Emotion breakdown</div>
           <div id="emotionBars"></div>
-          <div class="section-label" style="margin-top: 20px">
-            Suggested activities
-          </div>
+
+          <div class="section-label" style="margin-top:8px">Suggested activities</div>
           <div class="activities-list" id="faceActivities"></div>
+
           <div id="faceMessageWrap"></div>
-          <button class="btn btn-purple" onclick="goBack('screen-home')">
+
+          <button class="btn btn-purple" onclick="goBack('screen-home')" style="margin-top:8px">
             Done
           </button>
         </div>
@@ -143,11 +834,11 @@
             <div class="screen-sub">Tell me how you feel</div>
           </div>
         </div>
+
         <div class="text-content">
           <div class="chat-messages" id="chatMessages">
             <div class="bubble bot">
-              Hey! Tell me how you are feeling or what mood you are in. I will
-              suggest the perfect activities just for you 😊
+              Hey! Tell me how you are feeling or what mood you are in. I will suggest the perfect activities just for you 😊
             </div>
           </div>
           <div class="chat-input-area">
@@ -155,19 +846,12 @@
               type="text"
               id="moodInput"
               placeholder="e.g. I have a mood of crying..."
-              onkeydown="if (event.key === 'Enter') sendMood();"
+              onkeydown="if(event.key==='Enter') sendMood();"
             />
             <button class="send-btn" onclick="sendMood()">
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <line x1="22" y1="2" x2="11" y2="13" />
-                <polygon points="22 2 15 22 11 13 2 9 22 2" />
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="22" y1="2" x2="11" y2="13"/>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
               </svg>
             </button>
           </div>
@@ -176,36 +860,15 @@
 
       <!-- BOTTOM NAV -->
       <div class="nav-bar">
-        <div
-          class="nav-item active"
-          id="nav-home"
-          onclick="
-            showScreen('screen-home');
-            stopCamera();
-          "
-        >
+        <div class="nav-item active" id="nav-home" onclick="showScreen('screen-home'); stopCamera();">
           <div class="nav-icon">🏠</div>
           <span>Home</span>
         </div>
-        <div
-          class="nav-item"
-          id="nav-face"
-          onclick="
-            showScreen('screen-face');
-            startCamera();
-          "
-        >
+        <div class="nav-item" id="nav-face" onclick="showScreen('screen-face'); startCamera();">
           <div class="nav-icon">🎭</div>
           <span>Face</span>
         </div>
-        <div
-          class="nav-item"
-          id="nav-text"
-          onclick="
-            showScreen('screen-text');
-            stopCamera();
-          "
-        >
+        <div class="nav-item" id="nav-text" onclick="showScreen('screen-text'); stopCamera();">
           <div class="nav-icon">💬</div>
           <span>Chat</span>
         </div>
@@ -216,48 +879,35 @@
       let stream = null;
 
       function showScreen(id) {
-        document
-          .querySelectorAll(".screen")
-          .forEach((s) => s.classList.remove("active"));
+        document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
         document.getElementById(id).classList.add("active");
-        document
-          .querySelectorAll(".nav-item")
-          .forEach((n) => n.classList.remove("active"));
+        document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
         const map = {
-          "screen-home": "nav-home",
-          "screen-face": "nav-face",
-          "screen-text": "nav-text",
+          "screen-home":   "nav-home",
+          "screen-face":   "nav-face",
+          "screen-text":   "nav-text",
           "screen-result": "nav-face",
         };
         if (map[id]) document.getElementById(map[id]).classList.add("active");
       }
 
-      function goBack(to) {
-        showScreen(to);
-      }
+      function goBack(to) { showScreen(to); }
 
       async function startCamera() {
         try {
-          stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: "user" },
-          });
+          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
           const video = document.getElementById("videoFeed");
           video.srcObject = stream;
           video.style.display = "block";
           document.getElementById("camPlaceholder").style.display = "none";
           document.getElementById("scanOverlay").style.display = "block";
         } catch (e) {
-          document
-            .getElementById("camPlaceholder")
-            .querySelector("p").textContent = "Camera access denied";
+          document.getElementById("camPlaceholder").querySelector("p").textContent = "Camera access denied";
         }
       }
 
       function stopCamera() {
-        if (stream) {
-          stream.getTracks().forEach((t) => t.stop());
-          stream = null;
-        }
+        if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
         const video = document.getElementById("videoFeed");
         video.style.display = "none";
         document.getElementById("camPlaceholder").style.display = "flex";
@@ -265,14 +915,11 @@
       }
 
       async function captureAndAnalyze() {
-        const video = document.getElementById("videoFeed");
+        const video  = document.getElementById("videoFeed");
         const canvas = document.getElementById("captureCanvas");
-        const btn = document.getElementById("scanBtn");
-        if (!stream) {
-          alert("Camera not ready");
-          return;
-        }
-        canvas.width = video.videoWidth;
+        const btn    = document.getElementById("scanBtn");
+        if (!stream) { alert("Camera not ready"); return; }
+        canvas.width  = video.videoWidth;
         canvas.height = video.videoHeight;
         canvas.getContext("2d").drawImage(video, 0, 0);
         const imageData = canvas.toDataURL("image/jpeg", 0.8);
@@ -280,48 +927,36 @@
         btn.disabled = true;
         document.getElementById("scanLine").style.display = "block";
         try {
-          const res = await fetch("/analyze-face", {
+          const res  = await fetch("/analyze-face", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ image: imageData }),
           });
           const data = await res.json();
-          if (data.error) {
-            alert("Error: " + data.error);
-            return;
-          }
+          if (data.error) { alert("Error: " + data.error); return; }
           stopCamera();
           showResult(data);
         } catch (e) {
           alert("Server error. Make sure Flask is running.");
         } finally {
           btn.innerHTML = "Scan my face";
-          btn.disabled = false;
+          btn.disabled  = false;
           document.getElementById("scanLine").style.display = "none";
         }
       }
 
       function showResult(data) {
-        const emojiMap = {
-          happy: "😊",
-          sad: "😢",
-          angry: "😠",
-          fear: "😨",
-          surprise: "😲",
-          neutral: "😐",
-          disgust: "🤢",
-        };
+        const emojiMap = { happy:"😊", sad:"😢", angry:"😠", fear:"😨", surprise:"😲", neutral:"😐", disgust:"🤢" };
         const emoji = emojiMap[data.dominant_emotion?.toLowerCase()] || "🙂";
+
         document.getElementById("resultBadge").textContent =
-          `${emoji} ${data.dominant_emotion} · ${data.confidence ? (data.confidence * 100).toFixed(0) : 0}%`;
+          `${emoji} ${data.dominant_emotion} · ${data.confidence ? (data.confidence*100).toFixed(0) : 0}%`;
         document.getElementById("resultSub").textContent = data.response || "";
 
         const barsDiv = document.getElementById("emotionBars");
         barsDiv.innerHTML = "";
         if (data.all_emotions) {
-          const sorted = Object.entries(data.all_emotions)
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 5);
+          const sorted = Object.entries(data.all_emotions).sort((a,b)=>b[1]-a[1]).slice(0,5);
           sorted.forEach(([label, val]) => {
             barsDiv.innerHTML += `<div class="emotion-bar"><div class="bar-header"><span>${label}</span><span>${val}%</span></div><div class="bar-track"><div class="bar-fill" style="width:${val}%"></div></div></div>`;
           });
@@ -330,26 +965,25 @@
         const actsDiv = document.getElementById("faceActivities");
         actsDiv.innerHTML = "";
         if (data.activities) {
-          data.activities.forEach((a) => {
+          data.activities.forEach(a => {
             actsDiv.innerHTML += `
-    <div class="activity-row">
-      <div class="act-icon">✨</div>
-      <div class="act-info">
-        <div class="act-title">${a}</div>
-        <div class="act-desc">Suggested based on your mood</div>
-      </div>
-    </div>`;
+              <div class="activity-row">
+                <div class="act-icon">✨</div>
+                <div class="act-info">
+                  <div class="act-title">${a}</div>
+                  <div class="act-desc">Suggested based on your mood</div>
+                </div>
+              </div>`;
           });
         }
 
         const msgWrap = document.getElementById("faceMessageWrap");
         msgWrap.innerHTML = "";
         if (data.message) {
-          msgWrap.innerHTML = `<div class="section-label" style="margin-top:20px">Message you can send</div><div class="msg-box">${data.message}</div><button class="copy-btn" onclick="navigator.clipboard.writeText(this.previousElementSibling.textContent)">Copy message</button>`;
+          msgWrap.innerHTML = `<div class="section-label" style="margin-top:16px">Message you can send</div><div class="msg-box">${data.message}</div><button class="copy-btn" onclick="navigator.clipboard.writeText(this.previousElementSibling.textContent)">Copy message</button>`;
         }
 
-        document.getElementById("lastMoodLabel").textContent =
-          `${data.dominant_emotion} · just now`;
+        document.getElementById("lastMoodLabel").textContent = `${data.dominant_emotion} · just now`;
         showScreen("screen-result");
       }
 
@@ -364,43 +998,40 @@
 
       async function sendMood() {
         const input = document.getElementById("moodInput");
-        const text = input.value.trim();
+        const text  = input.value.trim();
         if (!text) return;
         input.value = "";
         addBubble(text, "user");
         const loader = addBubble("Thinking...", "bot loading");
         try {
-          const res = await fetch("/analyze-text", {
+          const res  = await fetch("/analyze-text", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ text }),
           });
           const data = await res.json();
           loader.remove();
-          if (data.error) {
-            addBubble("Error: " + data.error, "bot");
-            return;
-          }
+          if (data.error) { addBubble("Error: " + data.error, "bot"); return; }
           addBubble(data.response || "Here are some suggestions!", "bot");
+
           if (data.activities && data.activities.length > 0) {
             const wrap = document.createElement("div");
             wrap.className = "activities-bubble";
-            let html =
-              '<div class="section-label" style="margin-bottom:10px">Things you can do right now</div>';
-            data.activities.forEach((a) => {
-              html += `
-    <div class="activity-row" style="margin-bottom:8px">
-      <div class="act-icon">✨</div>
-      <div class="act-info">
-        <div class="act-title">${a}</div>
-        <div class="act-desc">Suggested activity</div>
-      </div>
-    </div>`;
+            let html = '<div class="section-label" style="margin-bottom:10px">Things you can do right now</div>';
+            data.activities.forEach(a => {
+              html += `<div class="activity-row" style="margin-bottom:8px">
+                <div class="act-icon">✨</div>
+                <div class="act-info">
+                  <div class="act-title">${a}</div>
+                  <div class="act-desc">Suggested activity</div>
+                </div>
+              </div>`;
             });
             wrap.innerHTML = html;
             document.getElementById("chatMessages").appendChild(wrap);
             wrap.scrollIntoView({ behavior: "smooth" });
           }
+
           if (data.message) {
             const msgWrap = document.createElement("div");
             msgWrap.className = "activities-bubble";
@@ -410,10 +1041,7 @@
           }
         } catch (e) {
           loader.remove();
-          addBubble(
-            "Server error. Make sure Flask is running on port 5000.",
-            "bot",
-          );
+          addBubble("Server error. Make sure Flask is running on port 5000.", "bot");
         }
       }
     </script>
