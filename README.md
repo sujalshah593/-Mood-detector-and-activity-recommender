@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🧠 Mood Detector & Activity Recommender
 
 An AI-powered web app that detects your mood through **face scanning** or **text chat**, and recommends personalized activities based on how you feel.
@@ -186,3 +187,5 @@ llama-cpp-python
 ## 📄 License
 
 This project is open source and available for educational use.
+=======
+>>>>>>> 99fe862 (Refactor code structure for improved readability and maintainability)

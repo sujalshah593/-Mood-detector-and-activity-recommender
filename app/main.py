@@ -85,6 +85,11 @@ def detect_emotion_from_text(text):
 
 
 @app.route('/')
+def landing():
+    return render_template('landing.html')
+
+
+@app.route('/app')
 def index():
     return render_template('index.html')
 
