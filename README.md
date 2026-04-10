@@ -4,6 +4,16 @@ An AI-powered web app that detects your mood through **face scanning** or **text
 
 ---
 
+## 👨‍💻 Authors
+
+**Sujal Shah**
+GitHub: [@sujalshah593](https://github.com/sujalshah593)
+
+**Nidhi Chaudhary**
+GitHub: [@nidhiv1303](https://github.com/nidhiv1303)
+
+---
+
 ## ✨ Features
 
 - 🎭 **Face Emotion Detection** — Uses your camera to detect emotions in real time using DeepFace AI
@@ -170,16 +180,6 @@ llama-cpp-python
 | DeepFace errors on first run | It auto-downloads model weights — wait for it to finish |
 | Camera not detected | Check browser permissions and try a different browser |
 | `llama_cpp` import error | Run `pip install llama-cpp-python --force-reinstall` |
-
----
-
-## 👨‍💻 Authors
-
-**Sujal Shah**
-GitHub: [@sujalshah593](https://github.com/sujalshah593)
-
-**Nidhi Chaudhary**
-GitHub: [@nidhiv1303](https://github.com/nidhiv1303)
 
 ---
 
