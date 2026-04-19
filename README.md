@@ -187,7 +187,3 @@ llama-cpp-python
 ## 📄 License
 
 This project is open source and available for educational use.
-
-=======
-
->>>>>>> 9618b7bab838466f55143bc6fdfac887dc1fa93f
