@@ -11,7 +11,7 @@ An AI-powered web app that detects your mood through **face scanning** or **text
 GitHub: [@sujalshah593](https://github.com/sujalshah593)
 
 **Nidhi Chaudhary**
-GitHub: [@nidhiv1303](https://github.com/nidhiv1303)
+GitHub: [@nidhiv1303](https://github.com/nidhii133)
 
 ---
 
